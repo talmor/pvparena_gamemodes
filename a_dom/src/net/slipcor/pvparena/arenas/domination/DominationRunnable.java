@@ -1,4 +1,4 @@
-package net.slipcor.pvparena.arenas.domination;
+package net.slipcor.pvparena.ArenaManager.domination;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -7,7 +7,7 @@ import net.slipcor.pvparena.arena.Arena;
 import net.slipcor.pvparena.arena.ArenaPlayer;
 import net.slipcor.pvparena.core.Debug;
 import net.slipcor.pvparena.core.Language;
-import net.slipcor.pvparena.managers.Teams;
+import net.slipcor.pvparena.managers.TeamManager;
 
 public class DominationRunnable implements Runnable {
 	public final boolean take;

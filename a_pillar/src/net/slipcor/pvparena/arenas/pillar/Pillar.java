@@ -1,4 +1,4 @@
-package net.slipcor.pvparena.arenas.pillar;
+package net.slipcor.pvparena.ArenaManager.pillar;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,9 +25,9 @@ import net.slipcor.pvparena.arena.ArenaTeam;
 import net.slipcor.pvparena.arena.ArenaPlayer.Status;
 import net.slipcor.pvparena.core.Language;
 import net.slipcor.pvparena.core.StringParser;
-import net.slipcor.pvparena.managers.Arenas;
+import net.slipcor.pvparena.managers.ArenaManager;
 import net.slipcor.pvparena.managers.Spawns;
-import net.slipcor.pvparena.managers.Teams;
+import net.slipcor.pvparena.managers.TeamManager;
 import net.slipcor.pvparena.neworder.ArenaType;
 import net.slipcor.pvparena.runnables.EndRunnable;
 
@@ -56,7 +56,7 @@ public class Pillar extends ArenaType {
 
 	@Override
 	public boolean allowsJoinInBattle() {
-		return arena.cfg.getBoolean("join.inbattle");
+		return arena.getArenaConfig().getBoolean("join.inbattle");
 	}
 
 	@Override
@@ -113,7 +113,7 @@ db.i("[FLAG]");
 			}
 
 			takeFlag(flagTeam.getColor().name(), false,
-					Spawns.getCoords(arena, flagTeam.getName() + "pumpkin"));
+					SpawnManager.getCoords(arena, flagTeam.getName() + "pumpkin"));
 
 		}
 	}
@@ -142,8 +142,8 @@ db.i("[FLAG]");
 			vLoc = block.getLocation().toVector();
 			sTeam = Teams.getTeam(arena, ap).getName();
 			db.i("block: " + vLoc.toString());
-			if (Spawns.getSpawns(arena, sTeam + "pumpkin").size() > 0) {
-				vFlag = Spawns.getNearest(Spawns.getSpawns(arena, sTeam + "pumpkin"), player.getLocation()).toVector();
+			if (SpawnManager.getSpawns(arena, sTeam + "pumpkin").size() > 0) {
+				vFlag = SpawnManager.getNearest(SpawnManager.getSpawns(arena, sTeam + "pumpkin"), player.getLocation()).toVector();
 			} else {
 				db.i(sTeam + "pumpkin = null");
 			}
@@ -156,10 +156,10 @@ db.i("[FLAG]");
 				if (paTeamFlags.containsKey(sTeam)) {
 					db.i("the pumpkin of the own team is taken!");
 
-					if (arena.cfg.getBoolean("game.mustbesafe")) {
+					if (arena.getArenaConfig().getBoolean("game.mustbesafe")) {
 						db.i("cancelling");
 
-						Arenas.tellPlayer(player,
+						ArenaManager.tellPlayer(player,
 								Language.parse("pumpkinnotsafe"));
 						return;
 					}
@@ -183,7 +183,7 @@ db.i("[FLAG]");
 				}
 
 				takeFlag(Teams.getTeam(arena, flagTeam).getColor().name(), false,
-						Spawns.getCoords(arena, flagTeam + "pumpkin"));
+						SpawnManager.getCoords(arena, flagTeam + "pumpkin"));
 				player.getInventory().setHelmet(
 						paHeadGears.get(player.getName()).clone());
 				paHeadGears.remove(player.getName());
@@ -205,8 +205,8 @@ db.i("[FLAG]");
 				db.i("checking for pumpkin of team " + aTeam);
 				vLoc = block.getLocation().toVector();
 				db.i("block: " + vLoc.toString());
-				if (Spawns.getSpawns(arena, aTeam + "pumpkin").size() > 0) {
-					vFlag = Spawns.getNearest(Spawns.getSpawns(arena, aTeam + "pumpkin"), player.getLocation()).toVector();
+				if (SpawnManager.getSpawns(arena, aTeam + "pumpkin").size() > 0) {
+					vFlag = SpawnManager.getNearest(SpawnManager.getSpawns(arena, aTeam + "pumpkin"), player.getLocation()).toVector();
 				}
 				if ((vFlag != null) && (vLoc.distance(vFlag) < 2)) {
 					db.i("pumpkin found!");
@@ -312,7 +312,7 @@ db.i("[FLAG]");
 		}
 
 		arena.lives.clear();
-		EndRunnable er = new EndRunnable(arena, arena.cfg.getInt("goal.endtimer"),0);
+		EndRunnable er = new EndRunnable(arena, arena.getArenaConfig().getInt("goal.endtimer"),0);
 		arena.REALEND_ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(PVPArena.instance,
 				er, 20L, 20L);
 		er.setId(arena.REALEND_ID);
@@ -322,13 +322,13 @@ db.i("[FLAG]");
 	public void commitCommand(Arena arena, CommandSender player, String[] args) {
 		if (!PVPArena.hasAdminPerms(player)
 				&& !(PVPArena.hasCreatePerms(player, arena))) {
-			Arenas.tellPlayer(player,
+			ArenaManager.tellPlayer(player,
 					Language.parse("nopermto", Language.parse("admin")), arena);
 			return;
 		}
 		
-		Arena.regionmodify = arena.name + ":" + args[0];
-		Arenas.tellPlayer(player, Language.parse("tosetpumpkin", args[0]));
+		Arena.regionmodify = arena.getName() + ":" + args[0];
+		ArenaManager.tellPlayer(player, Language.parse("tosetpumpkin", args[0]));
 	}
 	
 	@Override
@@ -338,11 +338,11 @@ db.i("[FLAG]");
 	}
 
 	protected short getFlagOverrideTeamShort(String team) {
-		if (arena.cfg.get("flagColors." + team) == null) {
+		if (arena.getArenaConfig().get("flagColors." + team) == null) {
 
 			return StringParser.getColorDataFromENUM(Teams.getTeam(arena, team).getColor().name());
 		}
-		return StringParser.getColorDataFromENUM(arena.cfg
+		return StringParser.getColorDataFromENUM(arena.getArenaConfig()
 				.getString("flagColors." + team));
 	}
 	
@@ -380,7 +380,7 @@ db.i("[FLAG]");
 
 		db.i("searching for team spawns");
 
-		HashMap<String, Object> coords = (HashMap<String, Object>) arena.cfg
+		HashMap<String, Object> coords = (HashMap<String, Object>) arena.getArenaConfig()
 				.getYamlConfiguration().getConfigurationSection("spawns")
 				.getValues(false);
 		for (String name : coords.keySet()) {
@@ -415,26 +415,11 @@ db.i("[FLAG]");
 		for (ArenaTeam team : arena.getTeams()) {
 			if (team.getTeamMembers().size() > 0) {
 				// team is active
-				arena.lives.put(team.getName(), arena.cfg.getInt("game.lives", 3));
+				arena.lives.put(team.getName(), arena.getArenaConfig().getInt("game.lives", 3));
 			}
 			takeFlag(team.getColor().name(), false,
-					Spawns.getCoords(arena, team.getName() + "pumpkin"));
+					SpawnManager.getCoords(arena, team.getName() + "pumpkin"));
 		}
-	}
-	
-	@Override
-	public void initLanguage(YamlConfiguration config) {
-		config.addDefault("lang.killedby", "%1% has been killed by %2%!");
-		config.addDefault("lang.pumpkinhomeleft",
-				"Player %1% brought home the pumpkin of team %2%! Lives left: %3%");
-		config.addDefault("lang.pumpkingrab",
-				"Player %1% grabbed the pumpkin of team %2%!");
-		config.addDefault("lang.pumpkinsave",
-				"Player %1% dropped the pumpkin of team %2%!");
-		config.addDefault("lang.setpumpkin", "Pumpkin set: %1%");
-		config.addDefault("lang.tosetpumpkin", "Pumpkin to set: %1%");
-		config.addDefault("lang.pumpkinnotsafe",
-				"Your pumpkin is taken! Cannot bring back an enemy pumpkin!'");
 	}
 
 	@Override
@@ -498,14 +483,14 @@ db.i("[FLAG]");
 
 		db.i("trying to set a pumpkin");
 
-		String sName = Arena.regionmodify.replace(arena.name + ":", "");
+		String sName = Arena.regionmodify.replace(arena.getName() + ":", "");
 
 		// command : /pa redflag1
 		// location: red1flag:
 
-		Spawns.setCoords(arena, block.getLocation(), sName + "pumpkin");
+		SpawnManager.setCoords(arena, block.getLocation(), sName + "pumpkin");
 
-		Arenas.tellPlayer(player, Language.parse("setpumpkin", sName));
+		ArenaManager.tellPlayer(player, Language.parse("setpumpkin", sName));
 
 		Arena.regionmodify = "";
 	}
@@ -569,7 +554,7 @@ db.i("[FLAG]");
 		}
 
 		PVPArena.instance.getAmm().timedEnd(arena, result);
-		EndRunnable er = new EndRunnable(arena, arena.cfg.getInt("goal.endtimer"),0);
+		EndRunnable er = new EndRunnable(arena, arena.getArenaConfig().getInt("goal.endtimer"),0);
 		arena.REALEND_ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(PVPArena.instance,
 				er, 20L, 20L);
 		er.setId(arena.REALEND_ID);
@@ -588,7 +573,7 @@ db.i("[FLAG]");
 			paTeamFlags.remove(flag);
 
 			takeFlag(flagTeam.getColor().name(), false,
-					Spawns.getCoords(arena, flagTeam.getName() + "flag"));
+					SpawnManager.getCoords(arena, flagTeam.getName() + "flag"));
 		}
 	}
 

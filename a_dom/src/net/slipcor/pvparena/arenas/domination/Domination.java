@@ -1,4 +1,4 @@
-package net.slipcor.pvparena.arenas.domination;
+package net.slipcor.pvparena.ArenaManager.domination;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,9 +13,9 @@ import net.slipcor.pvparena.arena.ArenaPlayer.Status;
 import net.slipcor.pvparena.core.Debug;
 import net.slipcor.pvparena.core.Language;
 import net.slipcor.pvparena.core.StringParser;
-import net.slipcor.pvparena.managers.Arenas;
+import net.slipcor.pvparena.managers.ArenaManager;
 import net.slipcor.pvparena.managers.Spawns;
-import net.slipcor.pvparena.managers.Teams;
+import net.slipcor.pvparena.managers.TeamManager;
 import net.slipcor.pvparena.neworder.ArenaType;
 import net.slipcor.pvparena.runnables.EndRunnable;
 
@@ -55,18 +55,18 @@ public class Domination extends ArenaType {
 	public void addDefaultTeams(YamlConfiguration config) {
 		config.addDefault("game.woolHead", Boolean.valueOf(false));
 		config.addDefault("dom.claimRange", Integer.valueOf(2));
-		if (arena.cfg.get("teams") == null) {
+		if (arena.getArenaConfig().get("teams") == null) {
 			db.i("no teams defined, adding custom red and blue!");
-			arena.cfg.getYamlConfiguration().addDefault("teams.red",
+			arena.getArenaConfig().getYamlConfiguration().addDefault("teams.red",
 					ChatColor.RED.name());
-			arena.cfg.getYamlConfiguration().addDefault("teams.blue",
+			arena.getArenaConfig().getYamlConfiguration().addDefault("teams.blue",
 					ChatColor.BLUE.name());
 		}
 	}
 
 	@Override
 	public boolean allowsJoinInBattle() {
-		return arena.cfg.getBoolean("join.inbattle");
+		return arena.getArenaConfig().getBoolean("join.inbattle");
 	}
 
 	@Override
@@ -154,9 +154,9 @@ public class Domination extends ArenaType {
 		db.i("   checkMove();");
 		db.i("------------------");
 		
-		int checkDistance = arena.cfg.getInt("dom.claimRange", 2);
+		int checkDistance = arena.getArenaConfig().getInt("dom.claimRange", 2);
 
-		for (Location loc : Spawns.getSpawns(arena, "flags")) {
+		for (Location loc : SpawnManager.getSpawns(arena, "flags")) {
 			//db.i("checking location: " + loc.toString());
 			
 			HashSet<String> teams = checkLocationPresentTeams(loc,
@@ -321,14 +321,14 @@ public class Domination extends ArenaType {
 		if ((PVPArena.hasAdminPerms(player) || (PVPArena.hasCreatePerms(player,
 				arena)))
 				&& (player.getItemInHand() != null)
-				&& (player.getItemInHand().getTypeId() == arena.cfg.getInt(
+				&& (player.getItemInHand().getTypeId() == arena.getArenaConfig().getInt(
 						"setup.wand", 280))) {
-			HashSet<Location> flags = Spawns.getSpawns(arena, "flags");
+			HashSet<Location> flags = SpawnManager.getSpawns(arena, "flags");
 			if (flags.contains(block.getLocation())) {
 				return false;
 			}
-			Spawns.setCoords(arena, block.getLocation(), "flag" + flags.size());
-			Arenas.tellPlayer(player,
+			SpawnManager.setCoords(arena, block.getLocation(), "flag" + flags.size());
+			ArenaManager.tellPlayer(player,
 					Language.parse("setflag", String.valueOf(flags.size())));
 			return true;
 		}
@@ -387,7 +387,7 @@ public class Domination extends ArenaType {
 		}
 
 		arena.lives.clear();
-		EndRunnable er = new EndRunnable(arena, arena.cfg.getInt("goal.endtimer"),0);
+		EndRunnable er = new EndRunnable(arena, arena.getArenaConfig().getInt("goal.endtimer"),0);
 		arena.REALEND_ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(PVPArena.instance,
 				er, 20L, 20L);
 		er.setId(arena.REALEND_ID);
@@ -404,14 +404,14 @@ public class Domination extends ArenaType {
 		
 		if (!PVPArena.hasAdminPerms(player)
 				&& !(PVPArena.hasCreatePerms(player, arena))) {
-			Arenas.tellPlayer(player,
+			ArenaManager.tellPlayer(player,
 					Language.parse("nopermto", Language.parse("admin")), arena);
 			return;
 		}
 		
 
 		if (args[0].startsWith("spawn") || args[0].equals("spawn")) {
-			Arenas.tellPlayer(sender, Language.parse("errorspawnfree", args[0]),
+			ArenaManager.tellPlayer(sender, Language.parse("errorspawnfree", args[0]),
 					arena);
 			return;
 		}
@@ -420,17 +420,17 @@ public class Domination extends ArenaType {
 			String[] split = args[0].split("spawn");
 			String sName = split[0];
 			if (Teams.getTeam(arena, sName) == null) {
-				Arenas.tellPlayer(sender, Language.parse("arenateamunknown", sName), arena);
+				ArenaManager.tellPlayer(sender, Language.parse("arenateamunknown", sName), arena);
 				return;
 			}
 
-			Spawns.setCoords(arena, player, args[0]);
-			Arenas.tellPlayer(player, Language.parse("setspawn", sName), arena);
+			SpawnManager.setCoords(arena, player, args[0]);
+			ArenaManager.tellPlayer(player, Language.parse(MSG.SPAWN_SET, sName), arena);
 			return;
 		}
 		
 		if (args[0].equals("lounge")) {
-			Arenas.tellPlayer(sender, Language.parse("errorloungefree", args[0]),
+			ArenaManager.tellPlayer(sender, Language.parse("errorloungefree", args[0]),
 					arena);
 			return;
 		}
@@ -439,31 +439,31 @@ public class Domination extends ArenaType {
 			String[] split = args[0].split("lounge");
 			String sName = split[0];
 			if (Teams.getTeam(arena, sName) == null) {
-				Arenas.tellPlayer(sender, Language.parse("arenateamunknown", sName), arena);
+				ArenaManager.tellPlayer(sender, Language.parse("arenateamunknown", sName), arena);
 				return;
 			}
 
-			Spawns.setCoords(arena, player, args[0]);
-			Arenas.tellPlayer(player, Language.parse("loungeset", sName), arena);
+			SpawnManager.setCoords(arena, player, args[0]);
+			ArenaManager.tellPlayer(player, Language.parse("loungeset", sName), arena);
 			return;
 		}
 		
-		if (Arena.regionmodify.startsWith(arena.name)) {
+		if (Arena.regionmodify.startsWith(arena.getName())) {
 			Arena.regionmodify = "";
-			Arenas.tellPlayer(player, Language.parse("tosetflagdone"));
+			ArenaManager.tellPlayer(player, Language.parse("tosetflagdone"));
 			return;
 		}
-		Arena.regionmodify = arena.name + ":flag";
-		Arenas.tellPlayer(player, Language.parse("tosetflag", "flag"));
+		Arena.regionmodify = arena.getName() + ":flag";
+		ArenaManager.tellPlayer(player, Language.parse("tosetflag", "flag"));
 	}
 
 	protected short getFlagOverrideTeamShort(String team) {
-		if (arena.cfg.get("flagColors." + team) == null) {
+		if (arena.getArenaConfig().get("flagColors." + team) == null) {
 
 			return StringParser.getColorDataFromENUM(Teams.getTeam(arena, team)
 					.getColor().name());
 		}
-		return StringParser.getColorDataFromENUM(arena.cfg
+		return StringParser.getColorDataFromENUM(arena.getArenaConfig()
 				.getString("flagColors." + team));
 	}
 
@@ -482,7 +482,7 @@ public class Domination extends ArenaType {
 
 		db.i("searching for team spawns");
 
-		HashMap<String, Object> coords = (HashMap<String, Object>) arena.cfg
+		HashMap<String, Object> coords = (HashMap<String, Object>) arena.getArenaConfig()
 				.getYamlConfiguration().getConfigurationSection("spawns")
 				.getValues(false);
 		for (String name : coords.keySet()) {
@@ -513,7 +513,7 @@ public class Domination extends ArenaType {
 
 	@Override
 	public void initiate() {
-		for (Location loc : Spawns.getSpawns(arena, "flags")) {
+		for (Location loc : SpawnManager.getSpawns(arena, "flags")) {
 			takeFlag(arena, loc, "");
 		}
 		paFlags = new HashMap<Location, String>();
@@ -524,33 +524,13 @@ public class Domination extends ArenaType {
 				db.i("adding team " + team.getName());
 				// team is active
 				arena.lives.put(team.getName(),
-						arena.cfg.getInt("game.lives", 3));
+						arena.getArenaConfig().getInt("game.lives", 3));
 			}
 		}
 		
 		DominationMainRunnable dmr = new DominationMainRunnable(arena, this);
 		dmr.ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(
 				PVPArena.instance, dmr, 3*20L, 3*20L);
-	}
-
-	@Override
-	public void initLanguage(YamlConfiguration config) {
-		config.addDefault("lang.youjoineddom",
-				"Welcome to the Domination Arena! You are on team %1%'");
-		config.addDefault("lang.playerjoineddom",
-				"%1% has joined team %2%!'");
-		config.addDefault("lang.killedby", "%1% has been killed by %2%!");
-		config.addDefault("lang.setflag", "Flag set: %1%");
-		config.addDefault("lang.tosetflagdone", "Exited flag set mode!");
-
-		config.addDefault("lang.domscore",
-				"Team %1% scored a point by holding a flag!");
-		config.addDefault("lang.domclaiming", "Team %1% is claiming a flag!");
-		config.addDefault("lang.domunclaiming",
-				"A flag claimed by Team %1% is being unclaimed!");
-		config.addDefault("lang.domunclaimingby",
-				"A flag claimed by Team %1% is being unclaimed by %2%!");
-		config.options().copyDefaults(true);
 	}
 
 	@Override
@@ -639,7 +619,7 @@ public class Domination extends ArenaType {
 	public void timed() {
 		int i;
 
-		int max = arena.cfg.getInt("game.lives");
+		int max = arena.getArenaConfig().getInt("game.lives");
 		HashSet<String> result = new HashSet<String>();
 		db.i("timed end!");
 
@@ -675,7 +655,7 @@ public class Domination extends ArenaType {
 		}
 
 		PVPArena.instance.getAmm().timedEnd(arena, result);
-		EndRunnable er = new EndRunnable(arena, arena.cfg.getInt("goal.endtimer"),0);
+		EndRunnable er = new EndRunnable(arena, arena.getArenaConfig().getInt("goal.endtimer"),0);
 		arena.REALEND_ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(PVPArena.instance,
 				er, 20L, 20L);
 		er.setId(arena.REALEND_ID);

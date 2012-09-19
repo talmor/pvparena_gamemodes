@@ -1,4 +1,4 @@
-package net.slipcor.pvparena.arenas.sabotage;
+package net.slipcor.pvparena.ArenaManager.sabotage;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,9 +26,9 @@ import net.slipcor.pvparena.arena.ArenaPlayer.Status;
 import net.slipcor.pvparena.core.Language;
 import net.slipcor.pvparena.core.StringParser;
 import net.slipcor.pvparena.listeners.PlayerListener;
-import net.slipcor.pvparena.managers.Arenas;
+import net.slipcor.pvparena.managers.ArenaManager;
 import net.slipcor.pvparena.managers.Spawns;
-import net.slipcor.pvparena.managers.Teams;
+import net.slipcor.pvparena.managers.TeamManager;
 import net.slipcor.pvparena.neworder.ArenaType;
 import net.slipcor.pvparena.runnables.EndRunnable;
 
@@ -50,18 +50,18 @@ public class Sabotage extends ArenaType {
 	@Override
 	public void addDefaultTeams(YamlConfiguration config) {
 		config.addDefault("game.woolHead", Boolean.valueOf(false));
-		if (arena.cfg.get("teams") == null) {
+		if (arena.getArenaConfig().get("teams") == null) {
 			db.i("no teams defined, adding custom red and blue!");
-			arena.cfg.getYamlConfiguration().addDefault("teams.red",
+			arena.getArenaConfig().getYamlConfiguration().addDefault("teams.red",
 					ChatColor.RED.name());
-			arena.cfg.getYamlConfiguration().addDefault("teams.blue",
+			arena.getArenaConfig().getYamlConfiguration().addDefault("teams.blue",
 					ChatColor.BLUE.name());
 		}
 	}
 
 	@Override
 	public boolean allowsJoinInBattle() {
-		return arena.cfg.getBoolean("join.inbattle");
+		return arena.getArenaConfig().getBoolean("join.inbattle");
 	}
 
 	@Override
@@ -141,9 +141,9 @@ public class Sabotage extends ArenaType {
 				db.i("checking for tnt of team " + aTeam);
 				vLoc = block.getLocation().toVector();
 				db.i("block: " + vLoc.toString());
-				if (Spawns.getSpawns(arena, aTeam + "flag").size() > 0) {
-					vFlag = Spawns.getNearest(
-							Spawns.getSpawns(arena, aTeam + "flag"),
+				if (SpawnManager.getSpawns(arena, aTeam + "flag").size() > 0) {
+					vFlag = SpawnManager.getNearest(
+							SpawnManager.getSpawns(arena, aTeam + "flag"),
 							player.getLocation()).toVector();
 				}
 				if ((vFlag != null) && (vLoc.distance(vFlag) < 2)) {
@@ -230,7 +230,7 @@ public class Sabotage extends ArenaType {
 		}
 
 		arena.lives.clear();
-		EndRunnable er = new EndRunnable(arena, arena.cfg.getInt("goal.endtimer"),0);
+		EndRunnable er = new EndRunnable(arena, arena.getArenaConfig().getInt("goal.endtimer"),0);
 		arena.REALEND_ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(PVPArena.instance,
 				er, 20L, 20L);
 		er.setId(arena.REALEND_ID);
@@ -249,13 +249,13 @@ public class Sabotage extends ArenaType {
 		
 		if (!PVPArena.hasAdminPerms(player)
 				&& !(PVPArena.hasCreatePerms(player, arena))) {
-			Arenas.tellPlayer(player,
+			ArenaManager.tellPlayer(player,
 					Language.parse("nopermto", Language.parse("admin")), arena);
 			return;
 		}
 		
 		if (args[0].startsWith("spawn") || args[0].equals("spawn")) {
-			Arenas.tellPlayer(sender, Language.parse("errorspawnfree", args[0]),
+			ArenaManager.tellPlayer(sender, Language.parse("errorspawnfree", args[0]),
 					arena);
 			return;
 		}
@@ -264,17 +264,17 @@ public class Sabotage extends ArenaType {
 			String[] split = args[0].split("spawn");
 			String sName = split[0];
 			if (Teams.getTeam(arena, sName) == null) {
-				Arenas.tellPlayer(sender, Language.parse("arenateamunknown", sName), arena);
+				ArenaManager.tellPlayer(sender, Language.parse("arenateamunknown", sName), arena);
 				return;
 			}
 
-			Spawns.setCoords(arena, player, args[0]);
-			Arenas.tellPlayer(player, Language.parse("setspawn", sName), arena);
+			SpawnManager.setCoords(arena, player, args[0]);
+			ArenaManager.tellPlayer(player, Language.parse(MSG.SPAWN_SET, sName), arena);
 			return;
 		}
 		
 		if (args[0].equals("lounge")) {
-			Arenas.tellPlayer(sender, Language.parse("errorloungefree", args[0]),
+			ArenaManager.tellPlayer(sender, Language.parse("errorloungefree", args[0]),
 					arena);
 			return;
 		}
@@ -283,16 +283,16 @@ public class Sabotage extends ArenaType {
 			String[] split = args[0].split("lounge");
 			String sName = split[0];
 			if (Teams.getTeam(arena, sName) == null) {
-				Arenas.tellPlayer(sender, Language.parse("arenateamunknown", sName), arena);
+				ArenaManager.tellPlayer(sender, Language.parse("arenateamunknown", sName), arena);
 				return;
 			}
 
-			Spawns.setCoords(arena, player, args[0]);
-			Arenas.tellPlayer(player, Language.parse("loungeset", sName), arena);
+			SpawnManager.setCoords(arena, player, args[0]);
+			ArenaManager.tellPlayer(player, Language.parse("loungeset", sName), arena);
 			return;
 		}
-		Arena.regionmodify = arena.name + ":" + args[0];
-		Arenas.tellPlayer(sender, Language.parse("tosettnt", args[0]));
+		Arena.regionmodify = arena.getName() + ":" + args[0];
+		ArenaManager.tellPlayer(sender, Language.parse("tosettnt", args[0]));
 	}
 
 	@Override
@@ -314,7 +314,7 @@ public class Sabotage extends ArenaType {
 				paTeamFlags.put(team.getName(), ap.getName());
 				ap.get().getInventory().addItem(new ItemStack(Material.FLINT_AND_STEEL, 1));
 				ap.get().getInventory().addItem(new ItemStack(Material.TNT, 1));
-				Arenas.tellPlayer(ap.get(), Language.parse("youtnt"));
+				ArenaManager.tellPlayer(ap.get(), Language.parse("youtnt"));
 				return;
 			}
 		}
@@ -361,7 +361,7 @@ public class Sabotage extends ArenaType {
 
 		db.i("searching for team spawns");
 
-		HashMap<String, Object> coords = (HashMap<String, Object>) arena.cfg
+		HashMap<String, Object> coords = (HashMap<String, Object>) arena.getArenaConfig()
 				.getYamlConfiguration().getConfigurationSection("spawns")
 				.getValues(false);
 		for (String name : coords.keySet()) {
@@ -402,20 +402,6 @@ public class Sabotage extends ArenaType {
 				distributeFlag(null, team);
 			}
 		}
-	}
-
-	@Override
-	public void initLanguage(YamlConfiguration config) {
-		config.addDefault("lang.youjoinedsabotage",
-				"Welcome to the Sabotage Arena! You are on team %1%'");
-		config.addDefault("lang.playerjoinedsabotage",
-				"%1% has joined team %2%!'");
-		
-		config.addDefault("lang.killedby", "%1% has been killed by %2%!");
-		config.addDefault("lang.tosettnt", "TNT to set: %1%");
-		config.addDefault("lang.settnt", "TNT set: %1%");
-		config.addDefault("lang.youtnt",
-				"You now carry the sabotage materials!'");
 	}
 
 	@Override
@@ -497,14 +483,14 @@ public class Sabotage extends ArenaType {
 
 		db.i("trying to set a flag");
 
-		String sName = Arena.regionmodify.replace(arena.name + ":", "");
+		String sName = Arena.regionmodify.replace(arena.getName() + ":", "");
 
 		// command : /pa redflag1
 		// location: red1flag:
 
-		Spawns.setCoords(arena, block.getLocation(), sName + "flag");
+		SpawnManager.setCoords(arena, block.getLocation(), sName + "flag");
 
-		Arenas.tellPlayer(player, Language.parse("settnt", sName));
+		ArenaManager.tellPlayer(player, Language.parse("settnt", sName));
 
 		Arena.regionmodify = "";
 	}
@@ -553,7 +539,7 @@ public class Sabotage extends ArenaType {
 		}
 
 		PVPArena.instance.getAmm().timedEnd(arena, result);
-		EndRunnable er = new EndRunnable(arena, arena.cfg.getInt("goal.endtimer"),0);
+		EndRunnable er = new EndRunnable(arena, arena.getArenaConfig().getInt("goal.endtimer"),0);
 		arena.REALEND_ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(PVPArena.instance,
 				er, 20L, 20L);
 		er.setId(arena.REALEND_ID);

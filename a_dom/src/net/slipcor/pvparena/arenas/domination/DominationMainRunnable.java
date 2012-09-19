@@ -1,4 +1,4 @@
-package net.slipcor.pvparena.arenas.domination;
+package net.slipcor.pvparena.ArenaManager.domination;
 
 import org.bukkit.Bukkit;
 import net.slipcor.pvparena.arena.Arena;
@@ -21,7 +21,7 @@ public class DominationMainRunnable implements Runnable {
 	 */
 	@Override
 	public void run() {
-		if (!arena.fightInProgress || arena.REALEND_ID != -1) {
+		if (a.isLocked() || arena.REALEND_ID != -1) {
 			Bukkit.getScheduler().cancelTask(ID);
 		}
 		domination.checkMove();

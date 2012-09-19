@@ -1,4 +1,4 @@
-package net.slipcor.pvparena.arenas.tank;
+package net.slipcor.pvparena.ArenaManager.tank;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,10 +27,10 @@ import net.slipcor.pvparena.arena.ArenaTeam;
 import net.slipcor.pvparena.core.Language;
 import net.slipcor.pvparena.core.StringParser;
 import net.slipcor.pvparena.listeners.PlayerListener;
-import net.slipcor.pvparena.managers.Arenas;
+import net.slipcor.pvparena.managers.ArenaManager;
 import net.slipcor.pvparena.managers.Inventories;
 import net.slipcor.pvparena.managers.Spawns;
-import net.slipcor.pvparena.managers.Teams;
+import net.slipcor.pvparena.managers.TeamManager;
 import net.slipcor.pvparena.neworder.ArenaType;
 import net.slipcor.pvparena.runnables.EndRunnable;
 
@@ -51,8 +51,8 @@ public class Tank extends ArenaType {
 
 	@Override
 	public void addDefaultTeams(YamlConfiguration config) {
-		if (arena.cfg.get("teams") == null) {
-			arena.cfg.getYamlConfiguration().addDefault("teams.free",
+		if (arena.getArenaConfig().get("teams") == null) {
+			arena.getArenaConfig().getYamlConfiguration().addDefault("teams.free",
 					ChatColor.WHITE.name());
 		}
 	}
@@ -77,7 +77,7 @@ public class Tank extends ArenaType {
 			Bukkit.getScheduler().cancelTask(arena.REALEND_ID);
 		}
 
-		EndRunnable er = new EndRunnable(arena, arena.cfg.getInt("goal.endtimer"),0);
+		EndRunnable er = new EndRunnable(arena, arena.getArenaConfig().getInt("goal.endtimer"),0);
 		arena.REALEND_ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(PVPArena.instance,
 				er, 20L, 20L);
 		er.setId(arena.REALEND_ID);
@@ -122,21 +122,21 @@ public class Tank extends ArenaType {
 		
 		if (!PVPArena.hasAdminPerms(player)
 				&& !(PVPArena.hasCreatePerms(player, arena))) {
-			Arenas.tellPlayer(player,
+			ArenaManager.tellPlayer(player,
 					Language.parse("nopermto", Language.parse("admin")), arena);
 			return;
 		}
 		
 		String cmd = args[0];
 		if (cmd.equalsIgnoreCase("lounge")) {
-			Spawns.setCoords(arena, player, "lounge");
-			Arenas.tellPlayer(player, Language.parse("setlounge"));
+			SpawnManager.setCoords(arena, player, "lounge");
+			ArenaManager.tellPlayer(player, Language.parse("setlounge"));
 			return;
 		}
 
 		if (cmd.startsWith("spawn") || cmd.startsWith("tank")) {
-			Spawns.setCoords(arena, player, cmd);
-			Arenas.tellPlayer(player, Language.parse("setspawn", cmd));
+			SpawnManager.setCoords(arena, player, cmd);
+			ArenaManager.tellPlayer(player, Language.parse(MSG.SPAWN_SET, cmd));
 			return;
 		}
 	}
@@ -145,27 +145,27 @@ public class Tank extends ArenaType {
 	public void configParse() {
 		db.i("FreeFight Arena default overrides");
 
-		arena.cfg.set("game.teamKill", true);
-		arena.cfg.set("join.manual", false);
-		arena.cfg.set("join.random", true);
-		arena.cfg.set("game.woolHead", false);
-		arena.cfg.set("join.forceeven", false);
-		arena.cfg.set("arenatype.randomSpawn", true);
-		arena.cfg.set("teams", null);
-		arena.cfg.set("teams.free", "WHITE");
+		arena.getArenaConfig().set("game.teamKill", true);
+		arena.getArenaConfig().set("join.manual", false);
+		arena.getArenaConfig().set("join.random", true);
+		arena.getArenaConfig().set("game.woolHead", false);
+		arena.getArenaConfig().set("join.forceeven", false);
+		arena.getArenaConfig().set("arenatype.randomSpawn", true);
+		arena.getArenaConfig().set("teams", null);
+		arena.getArenaConfig().set("teams.free", "WHITE");
 		
-		if (arena.cfg.getYamlConfiguration().get("tankitems") == null) {
+		if (arena.getArenaConfig().getYamlConfiguration().get("tankitems") == null) {
 			ArrayList<String> items = new ArrayList<String>();
 			items.add("298,299,300,301,268"); // leather
 			items.add("302,303,304,305,272"); // chain
 			items.add("314,315,316,317,267"); // gold
 			items.add("306,307,308,309,276"); // iron
 			items.add("310,311,312,313,276"); // diamond
-			arena.cfg.set("tankitems", items);
+			arena.getArenaConfig().set("tankitems", items);
 		}
-		arena.cfg.save();
+		arena.getArenaConfig().save();
 		
-		List<String> lItems = arena.cfg.getStringList("tankitems", new ArrayList<String>());
+		List<String> lItems = arena.getArenaConfig().getStringList("tankitems", new ArrayList<String>());
 		int i = 0;
 		for (String s : lItems) {
 			items.put(i++, StringParser.getItemStacksFromString(s));
@@ -191,8 +191,8 @@ public class Tank extends ArenaType {
 			return;
 		}
 
-		HashSet<Location> spawns = Spawns.getSpawns(arena, "free");
-		if (arena.playerCount >= spawns.size()) {
+		HashSet<Location> spawns = SpawnManager.getSpawns(arena, "free");
+		if (arena.playerCount >= SpawnManager.size()) {
 			// full anyways, randomly put player
 			arena.tpPlayerToCoordName(player, string);
 			return;
@@ -242,7 +242,7 @@ public class Tank extends ArenaType {
 
 		db.i("searching for team spawns");
 
-		HashMap<String, Object> coords = (HashMap<String, Object>) arena.cfg
+		HashMap<String, Object> coords = (HashMap<String, Object>) arena.getArenaConfig()
 				.getYamlConfiguration().getConfigurationSection("spawns")
 				.getValues(false);
 		for (String name : coords.keySet()) {
@@ -265,31 +265,17 @@ public class Tank extends ArenaType {
 	@Override
 	public void initiate() {
 		arena.playerCount = 0;
-		arena.cfg.set("game.teamKill", Boolean.valueOf(true));
+		arena.getArenaConfig().set("game.teamKill", Boolean.valueOf(true));
 		for (ArenaTeam team : arena.getTeams()) {
 			for (ArenaPlayer ap : team.getTeamMembers()) {
 				getFreeSpawn(ap.get(), "spawn");
 				ap.setStatus(Status.FIGHT);
 				arena.lives.put(ap.getName(),
-						arena.cfg.getInt("game.lives", 3));
+						arena.getArenaConfig().getInt("game.lives", 3));
 				resetArmor(ap.get());
 				arena.playerCount++;
 			}
 		}
-	}
-	
-	@Override
-	public void initLanguage(YamlConfiguration config) {
-		config.addDefault("lang.youjoinedtank",
-				"Welcome to the Tank Arena!");
-		config.addDefault("lang.playerjoinedtank",
-				"%1% has joined the Tank Arena");
-		config.addDefault("lang.tankmode",
-				"TANK MODE! Everyone kill %1%, the tank!");
-		config.addDefault("lang.tankwon",
-				"The tank has won! Congratulations to %1%!");
-		config.addDefault("lang.tankdown",
-				"The tank is down!");
 	}
 	
 	@Override
@@ -316,7 +302,7 @@ public class Tank extends ArenaType {
 					Bukkit.getScheduler().cancelTask(arena.REALEND_ID);
 				}
 				
-				EndRunnable er = new EndRunnable(arena, arena.cfg.getInt("goal.endtimer"),0);
+				EndRunnable er = new EndRunnable(arena, arena.getArenaConfig().getInt("goal.endtimer"),0);
 				arena.REALEND_ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(PVPArena.instance,
 						er, 20L, 20L);
 				er.setId(arena.REALEND_ID);
@@ -387,7 +373,7 @@ public class Tank extends ArenaType {
 			}
 		}
 		arena.tellEveryone(Language.parse("tankmode", tank.getName()));
-		arena.cfg.set("game.teamKill", Boolean.valueOf(false));
+		arena.getArenaConfig().set("game.teamKill", Boolean.valueOf(false));
 	}
 
 	private void resetArmor(Player player) {
@@ -409,8 +395,8 @@ public class Tank extends ArenaType {
 				continue;
 			}
 			db.i("TEAM " + team.getName());
-			if (arena.cfg.getInt("ready.minTeam") > 0
-					&& team.getTeamMembers().size() < arena.cfg
+			if (arena.getArenaConfig().getInt("ready.minTeam") > 0
+					&& team.getTeamMembers().size() < arena.getArenaConfig()
 							.getInt("ready.minTeam")) {
 				return -3;
 			}
@@ -479,7 +465,7 @@ public class Tank extends ArenaType {
 		}
 		
 		PVPArena.instance.getAmm().timedEnd(arena, result);
-		EndRunnable er = new EndRunnable(arena, arena.cfg.getInt("goal.endtimer"),0);
+		EndRunnable er = new EndRunnable(arena, arena.getArenaConfig().getInt("goal.endtimer"),0);
 		arena.REALEND_ID = Bukkit.getScheduler().scheduleSyncRepeatingTask(PVPArena.instance,
 				er, 20L, 20L);
 		er.setId(arena.REALEND_ID);
