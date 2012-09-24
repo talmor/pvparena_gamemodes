@@ -14,9 +14,7 @@ import net.slipcor.pvparena.core.Debug;
 import net.slipcor.pvparena.core.Language;
 import net.slipcor.pvparena.core.StringParser;
 import net.slipcor.pvparena.managers.ArenaManager;
-import net.slipcor.pvparena.managers.Spawns;
 import net.slipcor.pvparena.managers.TeamManager;
-import net.slipcor.pvparena.neworder.ArenaType;
 import net.slipcor.pvparena.runnables.EndRunnable;
 
 import org.bukkit.Bukkit;
